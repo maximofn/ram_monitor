@@ -123,7 +123,8 @@ def get_ram_info():
     plt.tight_layout()
 
     # Save pie chart
-    plt.savefig('ram_chart.png', transparent=True)
+    path = os.path.dirname(os.path.realpath(__file__))
+    plt.savefig(f"{path}/ram_chart.png", transparent=True)
     plt.close(fig)
 
     # Define icon height
@@ -131,8 +132,8 @@ def get_ram_info():
     icon_width = int(icon_height * 1.5)
 
     # Load íconos
-    ram_icon = Image.open('ram.png')
-    ram_chart = Image.open('ram_chart.png')
+    ram_icon = Image.open(f'{path}/ram.png')
+    ram_chart = Image.open(f'{path}/ram_chart.png')
 
     # Resize icons
     scaled_ram_icon = ram_icon.resize((icon_width, icon_height), Image.LANCZOS)
@@ -149,12 +150,13 @@ def get_ram_info():
     combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, 0), scaled_ram_chart)
 
     # Save combined image
-    combined_image.save('ram_info.png')
+    combined_image.save(f'{path}/ram_info.png')
 
     return {"total": total_gb, "free": free_gb, "used": used_gb}
 
 if __name__ == "__main__":
-    if os.path.exists('ram_info.png'):
-        os.remove('ram_info.png')
+    path = os.path.dirname(os.path.realpath(__file__))
+    if os.path.exists(f'{path}/ram_info.png'):
+        os.remove(f'{path}/ram_info.png')
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Allow the program to be terminated with Ctrl+C
     main()
