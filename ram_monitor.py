@@ -129,25 +129,29 @@ def get_ram_info():
 
     # Define icon height
     icon_height = 22
-    icon_width = int(icon_height * 1.5)
+    padding = 10
 
     # Load íconos
     ram_icon = Image.open(f'{path}/ram.png')
     ram_chart = Image.open(f'{path}/ram_chart.png')
 
     # Resize icons
-    scaled_ram_icon = ram_icon.resize((icon_width, icon_height), Image.LANCZOS)
+    ram_icon_relation = ram_icon.width / ram_icon.height
+    ram_icon_width = int(icon_height * ram_icon_relation)
+    scaled_ram_icon = ram_icon.resize((ram_icon_width, icon_height), Image.LANCZOS)
 
     # Resize chart
-    scaled_ram_chart = ram_chart.resize((icon_width, icon_height), Image.LANCZOS)
+    chart_icon_relation = ram_chart.width / ram_chart.height
+    chart_icon_width = int(icon_height * chart_icon_relation)
+    scaled_ram_chart = ram_chart.resize((chart_icon_width, icon_height), Image.LANCZOS)
 
     # New image with the combined icons
     total_width = scaled_ram_icon.width + scaled_ram_chart.width
-    combined_image = Image.new('RGBA', (total_width, icon_height), (0, 0, 0, 0))  # Fondo transparente
+    combined_image = Image.new('RGBA', (total_width, icon_height+padding), (0, 0, 0, 0))  # Fondo transparente
 
     # Combine icons
-    combined_image.paste(scaled_ram_icon, (0, 0))
-    combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, 0), scaled_ram_chart)
+    combined_image.paste(scaled_ram_icon, (0, int(padding/2)))
+    combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, int(padding/2)), scaled_ram_chart)
 
     # Save combined image
     combined_image.save(f'{path}/ram_info.png')
