@@ -9,8 +9,13 @@ import webbrowser
 import psutil
 import matplotlib.pyplot as plt
 from PIL import Image
+import time
+import re
 
 APPINDICATOR_ID = 'GPU_monitor'
+
+image_to_show = None
+old_image_to_show = None
 
 def main():
     path = os.path.dirname(os.path.realpath(__file__))
@@ -66,19 +71,24 @@ def build_menu():
     return menu
 
 def update_ram_info(indicator):
-    ram_info = get_ram_info()
+    global image_to_show
+    global old_image_to_show
 
-    # info = f"Free:{ram_info['free']:.2f}GB/Used:{ram_info['used']:.2f}GB/Total:{ram_info['total']:.2f}GB"
-    # indicator.set_label(info, "Indicator")
-    
+    get_ram_info()
+
     # Show pie chart
     path = os.path.dirname(os.path.realpath(__file__))
-    icon_path = os.path.abspath(f"{path}/ram_info.png")
+    icon_path = os.path.abspath(f"{path}/{image_to_show}")
     indicator.set_icon_full(icon_path, "RAM Usage")
+    
+    old_image_to_show = image_to_show
 
     return True
 
 def get_ram_info():
+    global image_to_show
+    global old_image_to_show
+
     vm = psutil.virtual_memory()
     total_gb = vm.total / 1024**3
     free_gb = vm.available / 1024**3
@@ -154,13 +164,26 @@ def get_ram_info():
     combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, int(padding/2)), scaled_ram_chart)
 
     # Save combined image
-    combined_image.save(f'{path}/ram_info.png')
+    timestamp = int(time.time())
+    image_to_show = f'ram_info_{timestamp}.png'
+    combined_image.save(f'{path}/{image_to_show}')
+
+    # Remove old image
+    if os.path.exists(f'{path}/{old_image_to_show}'):
+        os.remove(f'{path}/{old_image_to_show}')
 
     return {"total": total_gb, "free": free_gb, "used": used_gb}
 
 if __name__ == "__main__":
     path = os.path.dirname(os.path.realpath(__file__))
+
     if os.path.exists(f'{path}/ram_info.png'):
         os.remove(f'{path}/ram_info.png')
+    
+    # Remove all ram_info_*.png files
+    for file in os.listdir(path):
+        if re.search(r'ram_info_\d+.png', file):
+            os.remove(f'{path}/{file}')
+
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Allow the program to be terminated with Ctrl+C
     main()
