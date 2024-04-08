@@ -75,12 +75,14 @@ def update_ram_info(indicator):
     global image_to_show
     global old_image_to_show
 
+    # Generate RAM info icon
     get_ram_info()
 
     # Show pie chart
     icon_path = os.path.abspath(f"{PATH}/{image_to_show}")
     indicator.set_icon_full(icon_path, "RAM Usage")
     
+    # Update old image path
     old_image_to_show = image_to_show
 
     return True
