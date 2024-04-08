@@ -14,13 +14,14 @@ import re
 
 APPINDICATOR_ID = 'GPU_monitor'
 
+PATH = os.path.dirname(os.path.realpath(__file__))
+ICON_PATH = os.path.abspath(f"{PATH}/ram.png")
+
 image_to_show = None
 old_image_to_show = None
 
 def main():
-    path = os.path.dirname(os.path.realpath(__file__))
-    icon_path = os.path.abspath(f"{path}/ram.png")
-    RAM_indicator = AppIndicator3.Indicator.new(APPINDICATOR_ID, icon_path, AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
+    RAM_indicator = AppIndicator3.Indicator.new(APPINDICATOR_ID, ICON_PATH, AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
     RAM_indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
     RAM_indicator.set_menu(build_menu())
 
@@ -77,8 +78,7 @@ def update_ram_info(indicator):
     get_ram_info()
 
     # Show pie chart
-    path = os.path.dirname(os.path.realpath(__file__))
-    icon_path = os.path.abspath(f"{path}/{image_to_show}")
+    icon_path = os.path.abspath(f"{PATH}/{image_to_show}")
     indicator.set_icon_full(icon_path, "RAM Usage")
     
     old_image_to_show = image_to_show
@@ -133,8 +133,7 @@ def get_ram_info():
     plt.tight_layout()
 
     # Save pie chart
-    path = os.path.dirname(os.path.realpath(__file__))
-    plt.savefig(f"{path}/ram_chart.png", transparent=True)
+    plt.savefig(f"{PATH}/ram_chart.png", transparent=True)
     plt.close(fig)
 
     # Define icon height
@@ -142,8 +141,8 @@ def get_ram_info():
     padding = 10
 
     # Load íconos
-    ram_icon = Image.open(f'{path}/ram.png')
-    ram_chart = Image.open(f'{path}/ram_chart.png')
+    ram_icon = Image.open(f'{PATH}/ram.png')
+    ram_chart = Image.open(f'{PATH}/ram_chart.png')
 
     # Resize icons
     ram_icon_relation = ram_icon.width / ram_icon.height
@@ -166,24 +165,22 @@ def get_ram_info():
     # Save combined image
     timestamp = int(time.time())
     image_to_show = f'ram_info_{timestamp}.png'
-    combined_image.save(f'{path}/{image_to_show}')
+    combined_image.save(f'{PATH}/{image_to_show}')
 
     # Remove old image
-    if os.path.exists(f'{path}/{old_image_to_show}'):
-        os.remove(f'{path}/{old_image_to_show}')
+    if os.path.exists(f'{PATH}/{old_image_to_show}'):
+        os.remove(f'{PATH}/{old_image_to_show}')
 
     return {"total": total_gb, "free": free_gb, "used": used_gb}
 
 if __name__ == "__main__":
-    path = os.path.dirname(os.path.realpath(__file__))
-
-    if os.path.exists(f'{path}/ram_info.png'):
-        os.remove(f'{path}/ram_info.png')
+    if os.path.exists(f'{PATH}/ram_info.png'):
+        os.remove(f'{PATH}/ram_info.png')
     
     # Remove all ram_info_*.png files
-    for file in os.listdir(path):
+    for file in os.listdir(PATH):
         if re.search(r'ram_info_\d+.png', file):
-            os.remove(f'{path}/{file}')
+            os.remove(f'{PATH}/{file}')
 
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Allow the program to be terminated with Ctrl+C
     main()
