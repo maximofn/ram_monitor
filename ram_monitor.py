@@ -90,7 +90,7 @@ def update_ram_info(indicator):
     global old_image_to_show
 
     # Generate RAM info icon
-    get_ram_info()
+    memory = get_ram_info()
 
     # Show pie chart
     icon_path = os.path.abspath(f"{PATH}/{image_to_show}")
@@ -98,6 +98,9 @@ def update_ram_info(indicator):
     
     # Update old image path
     old_image_to_show = image_to_show
+
+    # Update menu
+    update_menu(memory)
 
     return True
 
@@ -158,7 +161,8 @@ def get_ram_info():
 
     # Load íconos
     ram_icon = Image.open(f'{PATH}/ram.png')
-    ram_chart = Image.open(f'{PATH}/ram_chart.png')
+    if os.path.exists(f"{PATH}/ram_chart.png"):
+        ram_chart = Image.open(f'{PATH}/ram_chart.png')
 
     # Resize icons
     ram_icon_relation = ram_icon.width / ram_icon.height
