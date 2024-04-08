@@ -20,6 +20,10 @@ ICON_PATH = os.path.abspath(f"{PATH}/ram.png")
 image_to_show = None
 old_image_to_show = None
 
+memory_free = None
+memory_used = None
+memory_total = None
+
 def main():
     RAM_indicator = AppIndicator3.Indicator.new(APPINDICATOR_ID, ICON_PATH, AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
     RAM_indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
@@ -37,6 +41,10 @@ def buy_me_a_coffe(_):
     webbrowser.open('https://www.buymeacoffee.com/maximofn')
 
 def build_menu():
+    global memory_free
+    global memory_used
+    global memory_total
+
     menu = gtk.Menu()
 
     memory_info = get_ram_info()
@@ -69,7 +77,13 @@ def build_menu():
     menu.append(item_quit)
 
     menu.show_all()
+
     return menu
+
+def update_menu(memory):
+    memory_free.set_label(f"Free: {memory['free']:.2f} GB")
+    memory_used.set_label(f"Used: {memory['used']:.2f} GB")
+    memory_total.set_label(f"Total: {memory['total']:.2f} GB")
 
 def update_ram_info(indicator):
     global image_to_show
