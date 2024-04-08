@@ -161,4 +161,4 @@ cython_debug/
 
 
 ram_chart.png
-ram_info.png
+ram_info*.png
