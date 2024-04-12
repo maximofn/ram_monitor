@@ -61,6 +61,14 @@ def build_menu():
     horizontal_separator1 = gtk.SeparatorMenuItem()
     menu.append(horizontal_separator1)
 
+    processes = gtk.MenuItem(label="Processes")
+    processes_submenu = build_processes_menu()
+    processes.set_submenu(processes_submenu)
+    menu.append(processes)
+
+    horizontal_separator2 = gtk.SeparatorMenuItem()
+    menu.append(horizontal_separator2)
+
     item_repo = gtk.MenuItem(label='Repository')
     item_repo.connect('activate', open_repo_link)
     menu.append(item_repo)
@@ -69,8 +77,8 @@ def build_menu():
     item_buy_me_a_coffe.connect('activate', buy_me_a_coffe)
     menu.append(item_buy_me_a_coffe)
 
-    horizontal_separator2 = gtk.SeparatorMenuItem()
-    menu.append(horizontal_separator2)
+    horizontal_separator3 = gtk.SeparatorMenuItem()
+    menu.append(horizontal_separator3)
 
     item_quit = gtk.MenuItem(label='Quit')
     item_quit.connect('activate', quit)
@@ -80,10 +88,41 @@ def build_menu():
 
     return menu
 
-def update_menu(memory):
+def build_processes_menu():
+    submenu = gtk.Menu()
+    attributes = ['pid', 'name', 'memory_percent', 'memory_info']
+    processes = psutil.process_iter(attributes)
+    num_processes_to_show = 5
+    processes_list = []
+
+    for proc in processes:
+        try:
+            processes_list.append(proc.as_dict(attrs=attributes))
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
+
+    # Order processes by memory usage
+    processes_list.sort(key=lambda x: x['memory_percent'], reverse=True)
+    for i in range(min(num_processes_to_show, len(processes_list))):
+        proc_info = f"PID: {processes_list[i]['pid']} ({processes_list[i]['name']}) {processes_list[i]['memory_info'].rss / 1024**3:.2f} GB ({processes_list[i]['memory_percent']:.2f} %)"
+        menu_item = gtk.MenuItem(label=proc_info)
+        submenu.append(menu_item)
+
+    return submenu
+
+def update_menu(memory, indicator):
     memory_free.set_label(f"Free: {memory['free']:.2f} GB")
     memory_used.set_label(f"Used: {memory['used']:.2f} GB")
     memory_total.set_label(f"Total: {memory['total']:.2f} GB")
+
+    # Build new processes menu
+    processes_menu = build_processes_menu()
+    processes_menu_item = indicator.get_menu().get_children()[4]
+
+    # Remove old processes menu and set new one
+    processes_menu_item.set_submenu(None)
+    processes_menu_item.set_submenu(processes_menu)
+    processes_menu.show_all()
 
 def update_ram_info(indicator):
     global image_to_show
@@ -100,7 +139,7 @@ def update_ram_info(indicator):
     old_image_to_show = image_to_show
 
     # Update menu
-    update_menu(memory)
+    update_menu(memory, indicator)
 
     return True
 
