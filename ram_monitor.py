@@ -23,6 +23,8 @@ old_image_to_show = None
 memory_free = None
 memory_used = None
 memory_total = None
+processes_menu_list = None
+NUM_PROCESSES_TO_SHOW = 10
 
 def main():
     RAM_indicator = AppIndicator3.Indicator.new(APPINDICATOR_ID, ICON_PATH, AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
@@ -44,57 +46,32 @@ def build_menu():
     global memory_free
     global memory_used
     global memory_total
+    global processes_menu_list
 
     menu = gtk.Menu()
 
     memory_info = get_ram_info()
 
+    # Memory free item
     memory_free = gtk.MenuItem(label=f"Free: {memory_info['free']:.2f} GB")
     menu.append(memory_free)
 
+    # Memory used item
     memory_used = gtk.MenuItem(label=f"Used: {memory_info['used']:.2f} GB")
     menu.append(memory_used)
 
+    # Memory total item
     memory_total = gtk.MenuItem(label=f"Total: {memory_info['total']:.2f} GB")
     menu.append(memory_total)
 
+    # Horizontal separator
     horizontal_separator1 = gtk.SeparatorMenuItem()
     menu.append(horizontal_separator1)
 
-    processes = gtk.MenuItem(label="Processes")
-    processes_submenu = build_processes_menu()
-    processes.set_submenu(processes_submenu)
-    menu.append(processes)
-
-    horizontal_separator2 = gtk.SeparatorMenuItem()
-    menu.append(horizontal_separator2)
-
-    item_repo = gtk.MenuItem(label='Repository')
-    item_repo.connect('activate', open_repo_link)
-    menu.append(item_repo)
-
-    item_buy_me_a_coffe = gtk.MenuItem(label='Buy me a coffe')
-    item_buy_me_a_coffe.connect('activate', buy_me_a_coffe)
-    menu.append(item_buy_me_a_coffe)
-
-    horizontal_separator3 = gtk.SeparatorMenuItem()
-    menu.append(horizontal_separator3)
-
-    item_quit = gtk.MenuItem(label='Quit')
-    item_quit.connect('activate', quit)
-    menu.append(item_quit)
-
-    menu.show_all()
-
-    return menu
-
-def build_processes_menu():
-    submenu = gtk.Menu()
+    # Processes
     attributes = ['pid', 'name', 'memory_percent', 'memory_info']
     processes = psutil.process_iter(attributes)
-    num_processes_to_show = 5
     processes_list = []
-
     for proc in processes:
         try:
             processes_list.append(proc.as_dict(attrs=attributes))
@@ -103,26 +80,64 @@ def build_processes_menu():
 
     # Order processes by memory usage
     processes_list.sort(key=lambda x: x['memory_percent'], reverse=True)
-    for i in range(min(num_processes_to_show, len(processes_list))):
-        proc_info = f"PID: {processes_list[i]['pid']} ({processes_list[i]['name']}) {processes_list[i]['memory_info'].rss / 1024**3:.2f} GB ({processes_list[i]['memory_percent']:.2f} %)"
-        menu_item = gtk.MenuItem(label=proc_info)
-        submenu.append(menu_item)
 
-    return submenu
+    # Show the top 5 processes
+    processes_menu_list = []
+    for i in range(min(NUM_PROCESSES_TO_SHOW, len(processes_list))):
+        proc_info = f"PID: {processes_list[i]['pid']} ({processes_list[i]['name']}) {processes_list[i]['memory_info'].rss*10 / 1024**3:.2f} GB ({processes_list[i]['memory_percent']:.2f} %)"
+        menu_item = gtk.MenuItem(label=proc_info)
+        processes_menu_list.append(menu_item)
+        menu.append(menu_item)
+
+    # Horizontal separator
+    horizontal_separator2 = gtk.SeparatorMenuItem()
+    menu.append(horizontal_separator2)
+
+    # Repository item
+    item_repo = gtk.MenuItem(label='Repository')
+    item_repo.connect('activate', open_repo_link)
+    menu.append(item_repo)
+
+    # Buy me a coffe item
+    item_buy_me_a_coffe = gtk.MenuItem(label='Buy me a coffe')
+    item_buy_me_a_coffe.connect('activate', buy_me_a_coffe)
+    menu.append(item_buy_me_a_coffe)
+
+    # Horizontal separator
+    horizontal_separator3 = gtk.SeparatorMenuItem()
+    menu.append(horizontal_separator3)
+
+    # Quit item
+    item_quit = gtk.MenuItem(label='Quit')
+    item_quit.connect('activate', quit)
+    menu.append(item_quit)
+
+    menu.show_all()
+
+    return menu
 
 def update_menu(memory, indicator):
     memory_free.set_label(f"Free: {memory['free']:.2f} GB")
     memory_used.set_label(f"Used: {memory['used']:.2f} GB")
     memory_total.set_label(f"Total: {memory['total']:.2f} GB")
 
-    # Build new processes menu
-    processes_menu = build_processes_menu()
-    processes_menu_item = indicator.get_menu().get_children()[4]
+    # Processes
+    attributes = ['pid', 'name', 'memory_percent', 'memory_info']
+    processes = psutil.process_iter(attributes)
+    processes_list = []
+    for proc in processes:
+        try:
+            processes_list.append(proc.as_dict(attrs=attributes))
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            continue
 
-    # Remove old processes menu and set new one
-    processes_menu_item.set_submenu(None)
-    processes_menu_item.set_submenu(processes_menu)
-    processes_menu.show_all()
+    # Order processes by memory usage
+    processes_list.sort(key=lambda x: x['memory_percent'], reverse=True)
+
+    # Show the top 5 processes
+    for i in range(min(NUM_PROCESSES_TO_SHOW, len(processes_list))):
+        proc_info = f"PID: {processes_list[i]['pid']} ({processes_list[i]['name']}) {processes_list[i]['memory_info'].rss*10 / 1024**3:.2f} GB ({processes_list[i]['memory_percent']:.2f} %)"
+        processes_menu_list[i].set_label(proc_info)
 
 def update_ram_info(indicator):
     global image_to_show
