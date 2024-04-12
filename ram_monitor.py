@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 import time
 import re
+import argparse
 
 APPINDICATOR_ID = 'GPU_monitor'
 
@@ -26,13 +27,13 @@ memory_total = None
 processes_menu_list = None
 NUM_PROCESSES_TO_SHOW = 10
 
-def main():
+def main(debug=False):
     RAM_indicator = AppIndicator3.Indicator.new(APPINDICATOR_ID, ICON_PATH, AppIndicator3.IndicatorCategory.SYSTEM_SERVICES)
     RAM_indicator.set_status(AppIndicator3.IndicatorStatus.ACTIVE)
     RAM_indicator.set_menu(build_menu())
 
     # Get disk info
-    GLib.timeout_add_seconds(1, update_ram_info, RAM_indicator)
+    GLib.timeout_add_seconds(1, update_ram_info, RAM_indicator, debug)
 
     GLib.MainLoop().run()
 
@@ -139,7 +140,7 @@ def update_menu(memory, indicator):
         proc_info = f"PID: {processes_list[i]['pid']} ({processes_list[i]['name']}) {processes_list[i]['memory_info'].rss*10 / 1024**3:.2f} GB ({processes_list[i]['memory_percent']:.2f} %)"
         processes_menu_list[i].set_label(proc_info)
 
-def update_ram_info(indicator):
+def update_ram_info(indicator, debug=False):
     global image_to_show
     global old_image_to_show
 
@@ -147,8 +148,9 @@ def update_ram_info(indicator):
     memory = get_ram_info()
 
     # Show pie chart
-    icon_path = os.path.abspath(f"{PATH}/{image_to_show}")
-    indicator.set_icon_full(icon_path, "RAM Usage")
+    if not debug:
+        icon_path = os.path.abspath(f"{PATH}/{image_to_show}")
+        indicator.set_icon_full(icon_path, "RAM Usage")
     
     # Update old image path
     old_image_to_show = image_to_show
@@ -206,7 +208,7 @@ def get_ram_info():
     plt.tight_layout()
 
     # Save pie chart
-    plt.savefig(f"{PATH}/ram_chart.png", transparent=True)
+    if not debug: plt.savefig(f"{PATH}/ram_chart.png", transparent=True)
     plt.close(fig)
 
     # Define icon height
@@ -215,8 +217,9 @@ def get_ram_info():
 
     # Load íconos
     ram_icon = Image.open(f'{PATH}/ram.png')
-    if os.path.exists(f"{PATH}/ram_chart.png"):
-        ram_chart = Image.open(f'{PATH}/ram_chart.png')
+    if not debug:
+        if os.path.exists(f"{PATH}/ram_chart.png"):
+            ram_chart = Image.open(f'{PATH}/ram_chart.png')
 
     # Resize icons
     ram_icon_relation = ram_icon.width / ram_icon.height
@@ -224,22 +227,26 @@ def get_ram_info():
     scaled_ram_icon = ram_icon.resize((ram_icon_width, icon_height), Image.LANCZOS)
 
     # Resize chart
-    chart_icon_relation = ram_chart.width / ram_chart.height
-    chart_icon_width = int(icon_height * chart_icon_relation)
-    scaled_ram_chart = ram_chart.resize((chart_icon_width, icon_height), Image.LANCZOS)
+    if not debug:
+        chart_icon_relation = ram_chart.width / ram_chart.height
+        chart_icon_width = int(icon_height * chart_icon_relation)
+        scaled_ram_chart = ram_chart.resize((chart_icon_width, icon_height), Image.LANCZOS)
 
     # New image with the combined icons
-    total_width = scaled_ram_icon.width + scaled_ram_chart.width
-    combined_image = Image.new('RGBA', (total_width, icon_height+padding), (0, 0, 0, 0))  # Fondo transparente
+    if not debug:
+        total_width = scaled_ram_icon.width + scaled_ram_chart.width
+        combined_image = Image.new('RGBA', (total_width, icon_height+padding), (0, 0, 0, 0))  # Fondo transparente
 
     # Combine icons
-    combined_image.paste(scaled_ram_icon, (0, int(padding/2)))
-    combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, int(padding/2)), scaled_ram_chart)
+    if not debug:
+        combined_image.paste(scaled_ram_icon, (0, int(padding/2)))
+        combined_image.paste(scaled_ram_chart, (scaled_ram_icon.width, int(padding/2)), scaled_ram_chart)
 
     # Save combined image
-    timestamp = int(time.time())
-    image_to_show = f'ram_info_{timestamp}.png'
-    combined_image.save(f'{PATH}/{image_to_show}')
+    if not debug:
+        timestamp = int(time.time())
+        image_to_show = f'ram_info_{timestamp}.png'
+        combined_image.save(f'{PATH}/{image_to_show}')
 
     # Remove old image
     if os.path.exists(f'{PATH}/{old_image_to_show}'):
@@ -248,13 +255,20 @@ def get_ram_info():
     return {"total": total_gb, "free": free_gb, "used": used_gb}
 
 if __name__ == "__main__":
-    if os.path.exists(f'{PATH}/ram_info.png'):
-        os.remove(f'{PATH}/ram_info.png')
+    parser = argparse.ArgumentParser(description='RAM Monitor')
+    parser.add_argument('--debug', action='store_true', help='Debug mode')
+    args = parser.parse_args()
+    debug = args.debug
+
+    if not debug:
+        if os.path.exists(f'{PATH}/ram_info.png'):
+            os.remove(f'{PATH}/ram_info.png')
     
     # Remove all ram_info_*.png files
-    for file in os.listdir(PATH):
-        if re.search(r'ram_info_\d+.png', file):
-            os.remove(f'{PATH}/{file}')
+    if not debug:
+        for file in os.listdir(PATH):
+            if re.search(r'ram_info_\d+.png', file):
+                os.remove(f'{PATH}/{file}')
 
     signal.signal(signal.SIGINT, signal.SIG_DFL) # Allow the program to be terminated with Ctrl+C
-    main()
+    main(debug)
