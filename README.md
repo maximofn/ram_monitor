@@ -1,14 +1,14 @@
-# Cpu monitor
+# RAM monitor
 
 🖥️ RAM Monitor for Ubuntu: The Ultimate Real-Time RAM Tracking Tool. Monitor your RAM temperature directly from your Ubuntu menu bar with RAM Monitor. This user-friendly and efficient application is fully integrated with the latest Ubuntu operating system. Get live updates and optimize your development tasks. Download now and take control of your GPU's health today!
 
 ![ram monitor](ram_monitor.gif)
 
 ## About GPU Monitor
-CPU Monitor is an intuitive tool designed for developers and professionals who need to keep an eye on their CPU health in real time. It integrates seamlessly with the Ubuntu menu bar, providing essential information at your fingertips.
+RAM Monitor is an intuitive tool designed for developers and professionals who need to keep an eye on their RAM health in real time. It integrates seamlessly with the Ubuntu menu bar, providing essential information at your fingertips.
 
 ## Key Features
- * Real-time Monitoring: View CPU temperature, all updated live.
+ * Real-time Monitoring: View RAM temperature, all updated live.
  * Optimized for Ubuntu: Crafted to integrate flawlessly with the latest Ubuntu OS.
 
 ## Installation
@@ -64,7 +64,7 @@ pip install psutil
 ## Execution at start-up
 
 ```bash
-cpu_monitor.sh
+ram_monitor.sh
 ```
 
 ## Support
