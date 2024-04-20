@@ -1,10 +1,10 @@
 # RAM monitor
 
-🖥️ RAM Monitor for Ubuntu: The Ultimate Real-Time RAM Tracking Tool. Monitor your RAM temperature directly from your Ubuntu menu bar with RAM Monitor. This user-friendly and efficient application is fully integrated with the latest Ubuntu operating system. Get live updates and optimize your development tasks. Download now and take control of your GPU's health today!
+🖥️ RAM Monitor for Ubuntu: The Ultimate Real-Time RAM Tracking Tool. Monitor your RAM temperature directly from your Ubuntu menu bar with RAM Monitor. This user-friendly and efficient application is fully integrated with the latest Ubuntu operating system. Get live updates and optimize your development tasks. Download now and take control of your RAM's health today!
 
 ![ram monitor](ram_monitor.gif)
 
-## About GPU Monitor
+## About RAM Monitor
 RAM Monitor is an intuitive tool designed for developers and professionals who need to keep an eye on their RAM health in real time. It integrates seamlessly with the Ubuntu menu bar, providing essential information at your fingertips.
 
 ## Key Features
