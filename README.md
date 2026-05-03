@@ -12,7 +12,7 @@ Two flavours, same project:
   - `ram-monitord` — HTTP+SSE daemon that reads `/proc/meminfo` and `/proc/<pid>/status` (~few MB RSS, < 1% CPU).
   - `ram-monitor-tray` — Linux system-tray frontend. Renders the icon with `tiny-skia` + FreeType.
   - `ram-monitor-core` — shared serde types between back and front.
-- **Python (legacy)** — `ram_monitor.py`, a single-file GTK indicator. Still functional, kept for reference until the Rust cutover.
+- **Python (legacy)** — `legacy/ram_monitor.py`, a single-file GTK indicator. Still functional, kept for reference for one release cycle.
 
 The two can coexist on different ports.
 
@@ -73,13 +73,13 @@ ram-monitor-tray --help
 
 ## Install (Python, legacy)
 
-> Kept for compatibility while the Rust cutover stabilises. Prefer the Rust path above.
+> Kept for one release cycle. Prefer the Rust path above. The `legacy/` directory will be removed once the Rust path proves stable in the wild.
 
 ```bash
 sudo apt install lm-sensors psensor
 sudo sensors-detect
 pip install psutil
-./add_to_startup.sh
+cd legacy && ./add_to_startup.sh
 ```
 
 Install python3-pip
