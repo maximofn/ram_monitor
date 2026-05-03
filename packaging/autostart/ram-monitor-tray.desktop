@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=RAM Monitor Tray
+Comment=System tray indicator for RAM usage (consumes ram-monitord)
+Exec=sh -c "exec $HOME/.local/bin/ram-monitor-tray"
+Icon=ram
+Terminal=false
+Hidden=false
+NoDisplay=false
+X-GNOME-Autostart-enabled=true
+Categories=System;Monitor;

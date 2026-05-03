@@ -1,64 +1,85 @@
 # RAM monitor
 
-🖥️ RAM Monitor for Ubuntu: The Ultimate Real-Time RAM Tracking Tool. Monitor your RAM temperature directly from your Ubuntu menu bar with RAM Monitor. This user-friendly and efficient application is fully integrated with the latest Ubuntu operating system. Get live updates and optimize your development tasks. Download now and take control of your RAM's health today!
+🖥️ RAM Monitor for Ubuntu: real-time RAM tracking in your menu bar. Live free/used/cached/swap stats and the top processes by RSS, all from a tiny system-tray icon.
 
 ![ram monitor](ram_monitor.gif)
 
-## About RAM Monitor
-RAM Monitor is an intuitive tool designed for developers and professionals who need to keep an eye on their RAM health in real time. It integrates seamlessly with the Ubuntu menu bar, providing essential information at your fingertips.
+## Architecture
 
-## Key Features
- * Real-time Monitoring: View RAM temperature, all updated live.
- * Optimized for Ubuntu: Crafted to integrate flawlessly with the latest Ubuntu OS.
+Two flavours, same project:
 
-## Installation
+- **Rust (current)** — workspace with three crates:
+  - `ram-monitord` — HTTP+SSE daemon that reads `/proc/meminfo` and `/proc/<pid>/status` (~few MB RSS, < 1% CPU).
+  - `ram-monitor-tray` — Linux system-tray frontend. Renders the icon with `tiny-skia` + FreeType.
+  - `ram-monitor-core` — shared serde types between back and front.
+- **Python (legacy)** — `ram_monitor.py`, a single-file GTK indicator. Still functional, kept for reference until the Rust cutover.
 
-### Clone the repository
+The two can coexist on different ports.
+
+Sister projects (each one is its own repo so you can install only what your machine needs): [`gpu_monitor`](https://github.com/maximofn/gpu_monitor), `cpu_monitor`, `disk_monitor`. Default ports: gpu=9123, cpu=9124, **ram=9125**, disk=9126.
+
+## Install (Rust)
+
+### Build
 
 ```bash
+sudo apt install fonts-dejavu-core libfreetype6 libfreetype-dev pkg-config build-essential
 git clone https://github.com/maximofn/ram_monitor.git
+cd ram_monitor
+cargo build --release --workspace
 ```
 
-or with `ssh`
+### Install binaries and assets
 
 ```bash
-git clone git@github.com:maximofn/ram_monitor.git
+install -m 0755 target/release/ram-monitord     ~/.local/bin/
+install -m 0755 target/release/ram-monitor-tray ~/.local/bin/
+install -Dm 0644 assets/ram.png                 ~/.local/share/ram-monitor/ram.png
 ```
 
-### Install the dependencies
-
-Make sure that you do not have any `venv` or `conda` environment installed.
+### Daemon as a user systemd service
 
 ```bash
-if [ -n "$VIRTUAL_ENV" ]; then
-    deactivate
-fi
-if command -v conda &>/dev/null; then
-    conda deactivate
-fi
-```
-Now install the dependencies
-
-```bash
-sudo apt install lm-sensors
+install -Dm 0644 packaging/systemd/ram-monitord.service ~/.config/systemd/user/ram-monitord.service
+systemctl --user daemon-reload
+systemctl --user enable --now ram-monitord
 ```
 
-Select YES to all questions
+Sanity check:
 
 ```bash
+curl -s http://127.0.0.1:9125/v1/info
+curl -s http://127.0.0.1:9125/v1/memory
+```
+
+### Tray as autostart
+
+```bash
+install -Dm 0644 packaging/autostart/ram-monitor-tray.desktop ~/.config/autostart/ram-monitor-tray.desktop
+nohup ~/.local/bin/ram-monitor-tray >/dev/null 2>&1 & disown
+```
+
+Or just log out / log in.
+
+### CLI flags
+
+```bash
+ram-monitord --help
+# --bind, --port, --sample-interval-ms, --max-processes, --mock, --log-level
+
+ram-monitor-tray --help
+# --backend-url, --icon-height, --dump-icon (debug: render one PNG and exit), --log-level
+```
+
+## Install (Python, legacy)
+
+> Kept for compatibility while the Rust cutover stabilises. Prefer the Rust path above.
+
+```bash
+sudo apt install lm-sensors psensor
 sudo sensors-detect
-```
-
-Install psensor
-
-```bash
-sudo apt install psensor
-```
-
-Install psutil
-
-```bash
 pip install psutil
+./add_to_startup.sh
 ```
 
 Install python3-pip
@@ -75,14 +96,22 @@ pip3 install matplotlib
 
 ## Execution at start-up
 
-```bash
-add_to_startup.sh
-```
+The daemon serves snapshots over plain HTTP and SSE.
 
-Then when you restart your computer, the RAM Monitor will start automatically.
+| Method | Path             | Description                                |
+|--------|------------------|--------------------------------------------|
+| GET    | `/healthz`       | Liveness + uptime                          |
+| GET    | `/v1/info`       | Backend version, host, kernel, total RAM   |
+| GET    | `/v1/snapshot`   | Full snapshot (memory + swap + processes)  |
+| GET    | `/v1/memory`     | Memory totals only                         |
+| GET    | `/v1/swap`       | Swap totals only                           |
+| GET    | `/v1/processes`  | Top-N processes by RSS                     |
+| GET    | `/v1/stream`     | SSE stream of `Snapshot` events            |
+
+Defaults: bind `127.0.0.1`, port `9125`, sample interval 1 s, top-20 processes.
 
 ## Support
 
-Consider giving a **☆ Star** to this repository, if you also want to invite me for a coffee, click on the following button
+Consider giving a **☆ Star** to this repository, or invite me to a coffee:
 
 [![BuyMeACoffee](https://img.shields.io/badge/Buy_Me_A_Coffee-support_my_work-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=white&labelColor=101010)](https://www.buymeacoffee.com/maximofn)

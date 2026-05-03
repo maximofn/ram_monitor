@@ -1,0 +1,19 @@
+[Unit]
+Description=RAM monitor backend (procfs metrics over HTTP/SSE)
+Documentation=https://github.com/maximofn/ram_monitor
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/ram-monitord
+Restart=on-failure
+RestartSec=2s
+MemoryMax=128M
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+PrivateTmp=true
+Environment=RUST_LOG=info
+
+[Install]
+WantedBy=default.target

@@ -162,3 +162,25 @@ cython_debug/
 
 ram_chart.png
 ram_info*.png
+
+# Rust
+target/
+*.rs.bk
+Cargo.lock.bak
+
+# Debug previews of the rendered tray icon (regenerated on demand)
+docs/preview/
+
+# Editor / IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code agent state
+.claude/
