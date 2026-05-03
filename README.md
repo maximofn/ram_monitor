@@ -76,25 +76,13 @@ ram-monitor-tray --help
 > Kept for one release cycle. Prefer the Rust path above. The `legacy/` directory will be removed once the Rust path proves stable in the wild.
 
 ```bash
-sudo apt install lm-sensors psensor
+sudo apt install lm-sensors psensor python3-pip
 sudo sensors-detect
-pip install psutil
+pip3 install psutil matplotlib
 cd legacy && ./add_to_startup.sh
 ```
 
-Install python3-pip
-
-```bash
-sudo apt install python3-pip
-```
-
-Install matplotlib
-
-```bash
-pip3 install matplotlib
-```
-
-## Execution at start-up
+## API (HTTP)
 
 The daemon serves snapshots over plain HTTP and SSE.
 
