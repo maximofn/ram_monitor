@@ -14,7 +14,9 @@ Two flavours, same project:
   - `ram-monitor-core` — shared serde types between back and front.
 - **Python (legacy)** — `legacy/ram_monitor.py`, a single-file GTK indicator. Still functional, kept for reference for one release cycle.
 
-The two can coexist on different ports.
+A native macOS frontend lives in `front-mac/` as an independent Swift Package (Swift + AppKit + CoreGraphics, zero third-party deps). It consumes the same `/v1/stream` endpoint and renders into the macOS menubar via `NSStatusItem`. See [`front-mac/README.md`](front-mac/README.md).
+
+The two can coexist on different ports. Splitting the daemon from the UI lets another machine on the LAN consume the same metrics — the Mac frontend connects directly when the daemon binds LAN, or through SSH port forwarding while the daemon stays on `127.0.0.1`.
 
 Sister projects (each one is its own repo so you can install only what your machine needs): [`gpu_monitor`](https://github.com/maximofn/gpu_monitor), `cpu_monitor`, `disk_monitor`. Default ports: gpu=9123, cpu=9124, **ram=9125**, disk=9126.
 
@@ -97,6 +99,40 @@ The daemon serves snapshots over plain HTTP and SSE.
 | GET    | `/v1/stream`     | SSE stream of `Snapshot` events            |
 
 Defaults: bind `127.0.0.1`, port `9125`, sample interval 1 s, top-20 processes.
+
+## macOS frontend
+
+```bash
+cd front-mac
+./scripts/build-app.sh
+open "build/RAM Monitor.app" --args --backend-url http://127.0.0.1:9125
+```
+
+The daemon defaults to binding `127.0.0.1` (no auth). To consume metrics from a remote Linux box without exposing the API on the LAN, forward the port over SSH:
+
+```bash
+ssh -fN -L 9125:127.0.0.1:9125 <ubuntu-host>
+open "build/RAM Monitor.app" --args --backend-url http://127.0.0.1:9125
+```
+
+Requires macOS 13 or later. The app is menubar-only (`LSUIElement=true`): no Dock icon, no window. Click the icon for a submenu with RAM, swap, and top-process detail — the same data the Linux tray exposes.
+
+To auto-start the tray on login, install the bundled LaunchAgent:
+
+```bash
+cd front-mac
+./scripts/install-launchagent.sh             # install + load now
+./scripts/install-launchagent.sh uninstall   # remove
+```
+
+For a persistent SSH tunnel that survives reboots and SSH drops, install the tunnel LaunchAgent (edit the host in the plist first if it isn't `wallabot`):
+
+```bash
+./scripts/install-tunnel.sh                  # install + load now
+./scripts/install-tunnel.sh uninstall        # remove
+```
+
+Logs land in `~/Library/Logs/ram-monitor-tray.{out,err}.log` and `~/Library/Logs/ram-monitor-tunnel.{out,err}.log`. The tray agent expects the backend reachable at `http://127.0.0.1:9125`.
 
 ## Support
 
