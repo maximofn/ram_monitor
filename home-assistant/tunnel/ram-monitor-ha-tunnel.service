@@ -1,0 +1,28 @@
+[Unit]
+Description=SSH forward tunnel to RAM host (Home Assistant access to ram-monitord)
+Documentation=file:///%h/projects/ram_monitor/home-assistant/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Túnel directo: el puerto 9125 de la raspberry (loopback) reenvía al
+# 127.0.0.1:9125 del host con RAM. Como HA corre con --network host, leer
+# 127.0.0.1:9125 desde el contenedor llega aquí.
+#
+# La clave dedicada está restringida en wallabot a `permitopen="127.0.0.1:9125"`,
+# así que esta clave SOLO puede abrir ese forward — no shell, no otros puertos.
+ExecStart=/usr/bin/ssh -N -T \
+    -i %h/.ssh/id_ed25519_ram_tunnel \
+    -o IdentitiesOnly=yes \
+    -o ServerAliveInterval=30 \
+    -o ServerAliveCountMax=3 \
+    -o ExitOnForwardFailure=yes \
+    -o StrictHostKeyChecking=accept-new \
+    -L 127.0.0.1:9125:127.0.0.1:9125 \
+    wallabot@wallabot
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

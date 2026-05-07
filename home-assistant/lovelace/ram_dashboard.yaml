@@ -1,0 +1,71 @@
+# Vista Lovelace para el RAM Monitor (formato `sections`, HA 2024+).
+#
+# Pegar como nueva entrada bajo `views:` en Settings → Dashboards → Edit
+# dashboard → tres puntos → Raw configuration editor.
+
+views:
+  - type: sections
+    title: RAM
+    path: ram
+    icon: mdi:memory
+    header:
+      card:
+        type: markdown
+        text_only: true
+        content: |
+          # {{ states('sensor.ram_monitor_host') }}
+          {{ states('sensor.ram_monitor_total') }} GiB total · kernel `{{ states('sensor.ram_monitor_kernel') }}`
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Memoria
+            heading_style: title
+            icon: mdi:memory
+          - type: gauge
+            entity: sensor.ram_used_percent
+            name: Uso
+            min: 0
+            max: 100
+            severity:
+              green: 0
+              yellow: 70
+              red: 90
+          - type: gauge
+            entity: sensor.swap_used_percent
+            name: Swap
+            min: 0
+            max: 100
+            severity:
+              green: 0
+              yellow: 30
+              red: 70
+          - type: tile
+            entity: sensor.ram_used
+          - type: tile
+            entity: sensor.ram_available
+          - type: tile
+            entity: sensor.ram_free
+          - type: tile
+            entity: sensor.ram_cached
+          - type: tile
+            entity: sensor.ram_buffers
+          - type: tile
+            entity: sensor.swap_used
+          - type: tile
+            entity: sensor.swap_total
+          - type: tile
+            entity: sensor.ram_top_process
+          - type: tile
+            entity: sensor.ram_top_process_rss
+          - type: tile
+            entity: sensor.ram_process_count
+          - type: history-graph
+            hours_to_show: 6
+            grid_options:
+              columns: full
+            entities:
+              - sensor.ram_used_percent
+              - sensor.ram_used
+              - sensor.ram_cached
+              - sensor.swap_used_percent

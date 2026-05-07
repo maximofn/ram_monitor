@@ -97,6 +97,18 @@ Texto: `freetype-rs 0.32` (versión pinned por compatibilidad con la libfreetype
 
 Para RAM, el único elemento "coloreable" es el donut según el porcentaje usado. No hay temperatura ni utilización separada, así que el label va siempre en color neutro.
 
+## Home Assistant (`home-assistant/`)
+
+Integración declarativa con HA usando el componente `rest` de `default_config`. 15 sensores: host/kernel/total + 6 métricas de memoria (used/available/free/buffers/cached/used_percent) + 3 de swap + 3 de procesos.
+
+**Topología**: túnel SSH forward desde raspihome (always-on) al host con RAM, puerto 9125. Toda la persistencia en la pi; en wallabot solo una pubkey en `authorized_keys` con `restrict,port-forwarding,permitopen="127.0.0.1:9125"`. Sin `port-forwarding` explícito, sshd corta el canal con `administratively prohibited` aunque la auth pase.
+
+**Bytes → GiB en plantilla**: el daemon expone bytes (precisos), HA convierte a GiB con 2 decimales (`/ 1073741824`) para que el UI no salga saturado. `state_class: measurement` mantiene historial graficable. `device_class: data_size` es lo que HA acepta para unidades de almacenamiento (B, KiB, MiB, GiB, TiB...).
+
+**`available` vs `free`**: en Linux, `MemAvailable` es lo que el kernel considera reclaimable (page cache reciclable cuenta), `MemFree` es solo lo no asignado. El paquete expone los dos; los gauges deben usar `used_percent` (que ya viene `total - available` desde el daemon) y `available` para "memoria libre visible al usuario", NO `free`. Si dejas que el usuario mire `free`, va a pensar que tiene una máquina al 95% cuando solo tiene cache caliente.
+
+**Schema replication**: igual que con `front-mac/Models.swift`, si añades un campo a `Memory` / `Swap` / `Process` en `ram-monitor-core`, replícalo en `home-assistant/packages/ram_monitor.yaml` como nuevo `value_template`.
+
 ## Convenciones del repo
 
 - **API versioning** por prefijo de path (`/v1/...`). `ram_monitor_core::API_VERSION` es la fuente de verdad.

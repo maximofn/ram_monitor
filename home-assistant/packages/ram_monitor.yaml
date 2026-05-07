@@ -1,0 +1,147 @@
+# RAM Monitor — paquete Home Assistant
+#
+# Drop-in para `packages/ram_monitor.yaml`. Consume /v1/snapshot del daemon
+# `ram-monitord` (puerto 9125) y expone una entidad por métrica.
+#
+# Asume conectividad a http://127.0.0.1:9125 desde el contenedor HA. Si el
+# daemon vive en otra máquina, monta un túnel SSH forward desde la pi al
+# host del RAM (ver home-assistant/tunnel/ en el repo).
+#
+# Bytes se convierten a GiB en plantilla (`/ 1073741824`) porque las cifras
+# crudas en bytes saturan el UI; los `state_class: measurement` siguen siendo
+# graficables con unidad coherente.
+
+rest:
+  - resource: http://127.0.0.1:9125/v1/snapshot
+    scan_interval: 15
+    timeout: 5
+    sensor:
+      # ---------- Datos de host ----------
+      - name: "RAM Monitor Host"
+        unique_id: ram_monitor_host
+        value_template: "{{ value_json.host }}"
+        icon: mdi:server
+
+      - name: "RAM Monitor Kernel"
+        unique_id: ram_monitor_kernel
+        value_template: "{{ value_json.kernel }}"
+        icon: mdi:linux
+
+      - name: "RAM Monitor Total"
+        unique_id: ram_monitor_total
+        value_template: "{{ (value_json.memory.total_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      # ---------- Memoria ----------
+      - name: "RAM Used"
+        unique_id: ram_monitor_used
+        value_template: "{{ (value_json.memory.used_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      - name: "RAM Available"
+        unique_id: ram_monitor_available
+        value_template: "{{ (value_json.memory.available_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      - name: "RAM Free"
+        unique_id: ram_monitor_free
+        value_template: "{{ (value_json.memory.free_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      - name: "RAM Buffers"
+        unique_id: ram_monitor_buffers
+        value_template: "{{ (value_json.memory.buffers_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      - name: "RAM Cached"
+        unique_id: ram_monitor_cached
+        value_template: "{{ (value_json.memory.cached_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:memory
+
+      - name: "RAM Used Percent"
+        unique_id: ram_monitor_used_percent
+        value_template: >-
+          {% if value_json.memory.total_bytes > 0 -%}
+          {{ (value_json.memory.used_bytes * 100 / value_json.memory.total_bytes) | round(1) }}
+          {%- endif %}
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:memory
+
+      # ---------- Swap ----------
+      - name: "Swap Total"
+        unique_id: ram_monitor_swap_total
+        value_template: "{{ (value_json.swap.total_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:swap-horizontal
+
+      - name: "Swap Used"
+        unique_id: ram_monitor_swap_used
+        value_template: "{{ (value_json.swap.used_bytes / 1073741824) | round(2) }}"
+        unit_of_measurement: "GiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:swap-horizontal
+
+      - name: "Swap Used Percent"
+        unique_id: ram_monitor_swap_used_percent
+        value_template: >-
+          {% if value_json.swap.total_bytes > 0 -%}
+          {{ (value_json.swap.used_bytes * 100 / value_json.swap.total_bytes) | round(1) }}
+          {%- else -%}
+          0
+          {%- endif %}
+        unit_of_measurement: "%"
+        state_class: measurement
+        icon: mdi:swap-horizontal
+
+      # ---------- Procesos ----------
+      - name: "RAM Process Count"
+        unique_id: ram_monitor_process_count
+        value_template: "{{ value_json.processes | length }}"
+        state_class: measurement
+        icon: mdi:format-list-numbered
+
+      - name: "RAM Top Process"
+        unique_id: ram_monitor_top_process
+        value_template: >-
+          {% if value_json.processes | length > 0 -%}
+          {{ (value_json.processes | sort(attribute='rss_bytes', reverse=true) | first).name }}
+          {%- else -%}
+          none
+          {%- endif %}
+        json_attributes_path: "$"
+        json_attributes:
+          - processes
+        icon: mdi:application-cog
+
+      - name: "RAM Top Process RSS"
+        unique_id: ram_monitor_top_process_rss
+        value_template: >-
+          {% if value_json.processes | length > 0 -%}
+          {{ ((value_json.processes | sort(attribute='rss_bytes', reverse=true) | first).rss_bytes / 1048576) | round(0) }}
+          {%- endif %}
+        unit_of_measurement: "MiB"
+        device_class: data_size
+        state_class: measurement
+        icon: mdi:application-cog
