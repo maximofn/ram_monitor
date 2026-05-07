@@ -134,6 +134,26 @@ For a persistent SSH tunnel that survives reboots and SSH drops, install the tun
 
 Logs land in `~/Library/Logs/ram-monitor-tray.{out,err}.log` and `~/Library/Logs/ram-monitor-tunnel.{out,err}.log`. The tray agent expects the backend reachable at `http://127.0.0.1:9125`.
 
+## Home Assistant integration
+
+Surface RAM state as native HA sensors with no custom component — just a YAML package on top of `default_config`'s `rest` integration. Polls `/v1/snapshot` every 15 s and exposes 15 entities (host metadata + total/used/available/free/buffers/cached in GiB, used %, swap total/used/% and top process with full process list as attribute).
+
+```bash
+# On the raspberry running Home Assistant:
+cd home-assistant/tunnel
+./install.sh                                 # generates dedicated SSH key, installs systemd user unit
+# (paste the printed pubkey line into the RAM host's ~/.ssh/authorized_keys)
+
+# Copy the package and reload HA:
+cp ../packages/ram_monitor.yaml /config/packages/
+# Add to /config/configuration.yaml (one-time per HA install):
+#   homeassistant:
+#     packages: !include_dir_named packages
+docker restart homeassistant
+```
+
+The dedicated key is restricted with `restrict,port-forwarding,permitopen="127.0.0.1:9125"` so it can only forward to `ram-monitord` and nothing else. Coexists in `/config/packages/` with packages from sibling monitors. See [`home-assistant/README.md`](home-assistant/README.md) for the full deploy guide and Lovelace dashboard.
+
 ## Support
 
 Consider giving a **☆ Star** to this repository, or invite me to a coffee:
