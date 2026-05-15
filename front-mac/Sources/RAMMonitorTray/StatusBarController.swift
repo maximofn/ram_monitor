@@ -3,6 +3,7 @@ import Foundation
 
 private let repoURL = URL(string: "https://github.com/maximofn/ram_monitor")!
 private let coffeeURL = URL(string: "https://www.buymeacoffee.com/maximofn")!
+private let compactModeDefaultsKey = "RAMMonitorTray.compactMode"
 
 enum TrayState: Sendable {
     case connecting
@@ -18,10 +19,12 @@ final class StatusBarController: NSObject {
     private var state: TrayState = .connecting
     private var lastAppearance: IconAppearance = .dark
     private var lastRenderedKey: String = ""
+    private var compactMode: Bool
 
     init(renderer: IconRenderer, backendURL: String) {
         self.renderer = renderer
         self.backendURL = backendURL
+        self.compactMode = UserDefaults.standard.bool(forKey: compactModeDefaultsKey)
         self.statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
         if let button = statusItem.button {
@@ -82,13 +85,13 @@ final class StatusBarController: NSObject {
         let key = renderKey(snapshot: snapshot, connected: connected, appearance: lastAppearance)
         if key == lastRenderedKey { return }
         lastRenderedKey = key
-        if let img = renderer.renderImage(snapshot: snapshot, connected: connected, appearance: lastAppearance) {
+        if let img = renderer.renderImage(snapshot: snapshot, connected: connected, appearance: lastAppearance, compact: compactMode) {
             statusItem.button?.image = img
         }
     }
 
     private func renderKey(snapshot: Snapshot?, connected: Bool, appearance: IconAppearance) -> String {
-        var parts: [String] = ["\(connected)", "\(appearance)"]
+        var parts: [String] = ["\(connected)", "\(appearance)", "compact=\(compactMode)"]
         if let s = snapshot {
             // Visible inputs only: used GiB rounded, total GiB ceil, used percent rounded.
             let usedGi = Int(s.memory.usedGiB.rounded())
@@ -179,6 +182,12 @@ final class StatusBarController: NSObject {
             menu.addItem(.separator())
         }
 
+        let toggleTitle = compactMode ? "Cambiar a extendido" : "Cambiar a compacto"
+        let toggle = NSMenuItem(title: toggleTitle, action: #selector(toggleCompactMode), keyEquivalent: "")
+        toggle.target = self
+        menu.addItem(toggle)
+        menu.addItem(.separator())
+
         let repo = NSMenuItem(title: "Repository", action: #selector(openRepo), keyEquivalent: "")
         repo.target = self
         menu.addItem(repo)
@@ -196,6 +205,14 @@ final class StatusBarController: NSObject {
     @objc private func openRepo() { NSWorkspace.shared.open(repoURL) }
     @objc private func openCoffee() { NSWorkspace.shared.open(coffeeURL) }
     @objc private func quit() { NSApp.terminate(nil) }
+
+    @objc private func toggleCompactMode() {
+        compactMode.toggle()
+        UserDefaults.standard.set(compactMode, forKey: compactModeDefaultsKey)
+        lastRenderedKey = ""
+        refreshIcon()
+        refreshMenu()
+    }
 }
 
 // MARK: - Helpers

@@ -80,8 +80,8 @@ struct IconRenderer {
     }
 
     @MainActor
-    func renderImage(snapshot: Snapshot?, connected: Bool, appearance: IconAppearance) -> NSImage? {
-        guard let result = renderCGImage(snapshot: snapshot, connected: connected, appearance: appearance) else {
+    func renderImage(snapshot: Snapshot?, connected: Bool, appearance: IconAppearance, compact: Bool = false) -> NSImage? {
+        guard let result = renderCGImage(snapshot: snapshot, connected: connected, appearance: appearance, compact: compact) else {
             return nil
         }
         let img = NSImage(cgImage: result.cgImage, size: result.logicalSize)
@@ -93,9 +93,10 @@ struct IconRenderer {
         snapshot: Snapshot?,
         connected: Bool,
         to path: String,
-        appearance: IconAppearance = .dark
+        appearance: IconAppearance = .dark,
+        compact: Bool = false
     ) throws {
-        guard let result = renderCGImage(snapshot: snapshot, connected: connected, appearance: appearance) else {
+        guard let result = renderCGImage(snapshot: snapshot, connected: connected, appearance: appearance, compact: compact) else {
             throw NSError(domain: "IconRenderer", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "render failed"])
         }
@@ -118,9 +119,9 @@ struct IconRenderer {
         let logicalSize: CGSize
     }
 
-    private func renderCGImage(snapshot: Snapshot?, connected: Bool, appearance: IconAppearance) -> RenderResult? {
+    private func renderCGImage(snapshot: Snapshot?, connected: Bool, appearance: IconAppearance, compact: Bool) -> RenderResult? {
         let scale: CGFloat = 2
-        let layout = self.layout(snapshot: snapshot, scale: scale, connected: connected, appearance: appearance)
+        let layout = self.layout(snapshot: snapshot, scale: scale, connected: connected, appearance: appearance, compact: compact)
         let pxW = max(1, Int(layout.totalLogicalWidth * scale))
         let pxH = max(1, Int(height * scale))
 
@@ -160,13 +161,14 @@ struct IconRenderer {
         let snapshot: Snapshot?
         let connected: Bool
         let appearance: IconAppearance
+        let compact: Bool
     }
 
-    private func layout(snapshot: Snapshot?, scale: CGFloat, connected: Bool, appearance: IconAppearance) -> Layout {
+    private func layout(snapshot: Snapshot?, scale: CGFloat, connected: Bool, appearance: IconAppearance, compact: Bool) -> Layout {
         let textPx = textSize(forHeight: height)
         // Probe with the widest plausible label so the donut never shifts when
         // used/total cross digit boundaries (e.g. " 9/32GB" → "10/32GB").
-        let probeWidth = measureText("00/00GB", size: textPx)
+        let probeWidth = compact ? 0 : measureText("00/00GB", size: textPx)
         let donutSize = max(8, height - donutPadding * 2)
         let iconW: CGFloat = baseIcon.map { CGFloat($0.width) / scale } ?? 0
         let total: CGFloat
@@ -176,6 +178,8 @@ struct IconRenderer {
             // could be misread as "0% used".
             let dashW = measureText("-", size: textPx)
             total = iconW + 4 + dashW + 2
+        } else if compact {
+            total = iconW + 2 + donutSize
         } else {
             total = iconW + 2 + probeWidth + 2 + donutSize
         }
@@ -187,7 +191,8 @@ struct IconRenderer {
             textPx: textPx,
             snapshot: snapshot,
             connected: connected,
-            appearance: appearance
+            appearance: appearance,
+            compact: compact
         )
     }
 
@@ -233,21 +238,25 @@ struct IconRenderer {
             ctx.restoreGState()
         }
 
-        let label = labelText(snapshot: snap)
-        let labelColor = layout.connected
-            ? IconColors.text(layout.appearance)
-            : IconColors.dimText(layout.appearance)
-        let textX = layout.iconWidth + 2
-        drawText(
-            label,
-            ctx: ctx,
-            x: textX,
-            size: layout.textPx,
-            color: labelColor,
-            blockHeight: height
-        )
+        if !layout.compact {
+            let label = labelText(snapshot: snap)
+            let labelColor = layout.connected
+                ? IconColors.text(layout.appearance)
+                : IconColors.dimText(layout.appearance)
+            let textX = layout.iconWidth + 2
+            drawText(
+                label,
+                ctx: ctx,
+                x: textX,
+                size: layout.textPx,
+                color: labelColor,
+                blockHeight: height
+            )
+        }
 
-        let donutX = layout.iconWidth + 2 + layout.textWidth + 2
+        let donutX = layout.compact
+            ? (layout.iconWidth + 2)
+            : (layout.iconWidth + 2 + layout.textWidth + 2)
         let usedPct = snap.memory.usedPercent
         drawDonut(
             ctx: ctx,
